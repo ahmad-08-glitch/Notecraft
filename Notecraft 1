@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>NoteCraft Media</title>
+  <style>
+    :root {
+      --bg-dark: #0f172a;
+      --surface-dark: #1e293b;
+      --surface-variant: #334155;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --secondary: #06b6d4;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --danger: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --border-color: rgba(255, 255, 255, 0.1);
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+    }
+
+    /* Screen Views */
+    .screen {
+      display: none;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      overflow-y: auto;
+    }
+    .screen.active {
+      display: flex;
+    }
+
+    /* Header & Navigation */
+    header {
+      background-color: var(--bg-dark);
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo-text {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+    .badge-media {
+      background-color: rgba(99, 102, 241, 0.2);
+      color: var(--primary);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: var(--radius-sm);
+    }
+
+    /* Search Bar */
+    .search-box {
+      margin: 12px 16px 6px 16px;
+      background-color: var(--surface-dark);
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      padding: 10px 14px;
+      gap: 10px;
+    }
+    .search-box input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      width: 100%;
+    }
+
+    /* Filter Chips */
+    .filter-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 8px 16px;
+      scrollbar-width: none;
+    }
+    .filter-scroll::-webkit-scrollbar { display: none; }
+    .chip {
+      background-color: var(--surface-dark);
+      color: var(--text-muted);
+      border-radius: var(--radius-sm);
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+    }
+    .chip.active {
+      background-color: rgba(99, 102, 241, 0.2);
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* Note Grid / List */
+    .notes-container {
+      padding: 12px 16px 90px 16px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .note-card {
+      background-color: var(--surface-dark);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 140px;
+      position: relative;
+      border: 1px solid var(--border-color);
+      transition: transform 0.15s ease;
+    }
+    .note-card:active {
+      transform: scale(0.98);
+    }
+    .note-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .note-tag-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      background: rgba(99, 102, 241, 0.2);
+      color: var(--primary);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .note-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .note-card-snippet {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .note-card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+    }
+    .media-icons {
+      display: flex;
+      gap: 4px;
+      color: var(--secondary);
+    }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+      cursor: pointer;
+      border: none;
+      z-index: 100;
+    }
+
+    /* Note Editor Styles */
+    .editor-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .btn-icon {
+      background: transparent;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.25rem;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Collaborator Bar */
+    .collab-bar {
+      padding: 8px 16px;
+      background: rgba(30, 41, 59, 0.7);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .collab-top-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .avatar-stack {
+      display: flex;
+      align-items: center;
+    }
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: white;
+      border: 2px solid var(--surface-dark);
+      margin-right: -8px;
+    }
+    .typing-status {
+      font-size: 0.75rem;
+      color: var(--success);
+      font-weight: 600;
+      margin-left: 16px;
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .collab-controls {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-pill {
+      background: var(--surface-variant);
+      color: var(--text-main);
+      border: none;
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .btn-pill.active {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--success);
+    }
+
+    /* Formatting Toolbar */
+    .formatting-toolbar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 8px 16px;
+      background: var(--surface-dark);
+      border-bottom: 1px solid var(--border-color);
+      scrollbar-width: none;
+    }
+    .formatting-toolbar::-webkit-scrollbar { display: none; }
+    .tool-btn {
+      background: var(--surface-variant);
+      color: var(--text-main);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      min-width: 32px;
+    }
+
+    /* Content Inputs */
+    .editor-body {
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .title-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 1.5rem;
+      font-weight: 800;
+      width: 100%;
+    }
+    .content-textarea {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-main);
+      font-size: 1rem;
+      line-height: 1.6;
+      width: 100%;
+      min-height: 200px;
+      resize: none;
+      font-family: inherit;
+    }
+
+    /* Media List & Items */
+    .media-section {
+      margin-top: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .media-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .media-buttons {
+      display: flex;
+      gap: 6px;
+    }
+    .media-item {
+      background: var(--surface-dark);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      position: relative;
+    }
+    .media-item img, .media-item video {
+      width: 100%;
+      max-height: 240px;
+      object-fit: cover;
+      display: block;
+      background: black;
+    }
+    .media-caption {
+      padding: 8px 12px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .btn-delete-media {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+      border: none;
+      padding: 4px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+    }
+
+    /* Modals */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-content {
+      background: var(--surface-dark);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 400px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .modal-input {
+      background: var(--bg-dark);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      color: var(--text-main);
+      font-size: 0.9rem;
+      outline: none;
+      width: 100%;
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-secondary {
+      background: var(--surface-variant);
+      color: var(--text-main);
+      border: none;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SCREEN 1: NOTE LIST -->
+  <div id="screen-list" class="screen active">
+    <header>
+      <div class="logo-container">
+        <span class="logo-text">NoteCraft</span>
+        <span class="badge-media">MEDIA</span>
+      </div>
+    </header>
+
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="search-input" placeholder="Search notes, media, or tags..." oninput="handleSearch()">
+    </div>
+
+    <div class="filter-scroll">
+      <div class="chip active" onclick="setCategory('All', this)">All</div>
+      <div class="chip" onclick="setCategory('Work', this)">Work</div>
+      <div class="chip" onclick="setCategory('Media', this)">Media</div>
+      <div class="chip" onclick="setCategory('Personal', this)">Personal</div>
+      <div class="chip" onclick="setCategory('Shared', this)">Shared</div>
+    </div>
+
+    <div class="notes-container" id="notes-grid"></div>
+
+    <button class="fab" onclick="createNewNote()">+</button>
+  </div>
+
+  <!-- SCREEN 2: NOTE DETAIL / EDITOR -->
+  <div id="screen-detail" class="screen">
+    <div class="editor-header">
+      <button class="btn-icon" onclick="saveAndClose()">←</button>
+      <div style="font-weight: 700; font-size: 0.95rem;" id="editor-status">Edit Note</div>
+      <div style="display:flex; gap: 8px;">
+        <button class="btn-icon" onclick="togglePinCurrentNote()">📌</button>
+        <button class="btn-icon" onclick="deleteCurrentNote()" style="color:var(--danger)">🗑</button>
+        <button class="btn-icon" onclick="saveAndClose()" style="color:var(--success)">✔</button>
+      </div>
+    </div>
+
+    <!-- Real-Time Collaboration Bar -->
+    <div class="collab-bar">
+      <div class="collab-top-row">
+        <div class="avatar-stack" id="avatar-stack">
+          <div class="avatar" style="background: #6366f1;">You</div>
+          <div class="avatar" style="background: #10b981;">SC</div>
+          <div class="avatar" style="background: #f59e0b;">MV</div>
+        </div>
+        <div class="typing-status" id="typing-indicator"></div>
+        <button class="btn-pill" style="background:rgba(99,102,241,0.2); color:var(--primary)" onclick="openShareModal()">+ Share</button>
+      </div>
+      <div class="collab-controls">
+        <button class="btn-pill" id="sim-btn" onclick="toggleLiveSim()">⚡ Simulate Live Edit</button>
+        <button class="btn-pill" id="role-pill" onclick="cycleRole()">Role: <span id="current-role-label">Owner</span></button>
+      </div>
+    </div>
+
+    <!-- Formatting Toolbar -->
+    <div class="formatting-toolbar" id="formatting-bar">
+      <button class="tool-btn" onclick="insertFormat('**', '**')">B</button>
+      <button class="tool-btn" onclick="insertFormat('*', '*')"><i>I</i></button>
+      <button class="tool-btn" onclick="insertFormat('# ', '')">H1</button>
+      <button class="tool-btn" onclick="insertFormat('## ', '')">H2</button>
+      <button class="tool-btn" onclick="insertFormat('• ', '')">• List</button>
+      <button class="tool-btn" onclick="insertFormat('1. ', '')">1. List</button>
+      <button class="tool-btn" onclick="insertFormat('[ ] ', '')">☑ Task</button>
+      <button class="tool-btn" onclick="insertFormat('> ', '')">❝ Quote</button>
+      <button class="tool-btn" onclick="insertFormat('```\n', '\n```')">{ }</button>
+    </div>
+
+    <div class="editor-body">
+      <input type="text" id="note-title" class="title-input" placeholder="Note Title...">
+      <textarea id="note-content" class="content-textarea" placeholder="Start typing rich text, inserting media, or formatting with buttons above..."></textarea>
+
+      <!-- Media Attachments Section -->
+      <div class="media-section">
+        <div class="media-header">
+          <span style="font-weight:700; font-size:0.95rem;">Media Attachments (<span id="media-count">0</span>)</span>
+          <div class="media-buttons">
+            <button class="btn-pill" onclick="document.getElementById('image-file-input').click()">+ Photo</button>
+            <button class="btn-pill" onclick="document.getElementById('video-file-input').click()">+ Video</button>
+            <button class="btn-pill" onclick="openWebVideoModal()">+ Web Stream</button>
+          </div>
+        </div>
+        <div id="media-items-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden File Pickers -->
+  <input type="file" id="image-file-input" accept="image/*" style="display:none" onchange="handleLocalImageUpload(event)">
+  <input type="file" id="video-file-input" accept="video/*" style="display:none" onchange="handleLocalVideoUpload(event)">
+
+  <!-- MODAL: ADD WEB VIDEO STREAM -->
+  <div class="modal-backdrop" id="web-video-modal">
+    <div class="modal-content">
+      <h3 style="font-weight:800">Add Online Video Stream</h3>
+      <p style="font-size:0.8rem; color:var(--text-muted)">Insert an MP4, WebM, or online streaming URL.</p>
+      <input type="text" id="web-video-url" class="modal-input" placeholder="https://.../sample.mp4">
+      <input type="text" id="web-video-caption" class="modal-input" placeholder="Caption / Title">
+      <div style="font-size:0.75rem; color:var(--primary); cursor:pointer;" onclick="setSampleVideo()">Tap for sample video (Big Buck Bunny)</div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('web-video-modal')">Cancel</button>
+        <button class="btn-primary" onclick="confirmWebVideo()">Insert</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SHARE NOTE -->
+  <div class="modal-backdrop" id="share-modal">
+    <div class="modal-content">
+      <h3 style="font-weight:800">Share Note</h3>
+      <p style="font-size:0.8rem; color:var(--text-muted)">Invite collaborators and set permissions.</p>
+      <div style="display:flex; gap:8px;">
+        <input type="email" id="share-email" class="modal-input" placeholder="colleague@domain.com">
+        <select id="share-role" class="modal-input" style="width:100px;">
+          <option value="EDITOR">Editor</option>
+          <option value="VIEWER">Viewer</option>
+        </select>
+      </div>
+      <button class="btn-primary" onclick="inviteCollaborator()">Send Invite</button>
+      <div style="border-top: 1px solid var(--border-color); padding-top: 10px;">
+        <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:6px;">Share Link:</div>
+        <div style="display:flex; gap:6px;">
+          <input type="text" readonly id="share-link-input" class="modal-input" value="https://notecraft.io/share/note_1">
+          <button class="btn-secondary" onclick="copyShareLink()">Copy</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn-secondary" onclick="closeModal('share-modal')">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- Data Store & Persistence ---
+    const DB_KEY = "notecraft_notes_db";
+    let notes = [];
+    let activeNote = null;
+    let currentCategory = "All";
+    let isSimulating = false;
+    let simTimer = null;
+    let currentUserRole = "OWNER"; // OWNER, EDITOR, VIEWER
+
+    // Initial Starter Data
+    const defaultNotes = [
+      {
+        id: 1,
+        title: "🚀 NoteCraft System Architecture & Blueprint",
+        content: "# Executive Blueprint\nWelcome to **NoteCraft Media**!\n\n### 1. Core Technical Components\n* **Local Persistence**: IndexedDB & LocalStorage\n* **Media Handling**: File-to-Blob storage\n* **Multiplayer Layer**: Role-based permissions & live presence\n\n> \"A reliable note never loses its media.\"",
+        category: "Work",
+        isPinned: true,
+        isShared: true,
+        media: [],
+        tags: ["Architecture", "Room"],
+        updatedAt: Date.now() - 3600000
+      },
+      {
+        id: 2,
+        title: "🎬 Media & Video Showcase",
+        content: "### Video Playback Features\nThis note demonstrates high-fidelity video streaming and local photo handling.\n\nEnjoy smooth in-app playback with complete HTML5 controls!",
+        category: "Media",
+        isPinned: false,
+        isShared: false,
+        media: [
+          {
+            id: 201,
+            type: "video",
+            url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+            caption: "Sample Nature Animation Video (Online MP4)"
+          }
+        ],
+        tags: ["Video", "Streaming"],
+        updatedAt: Date.now() - 7200000
+      }
+    ];
+
+    function loadNotes() {
+      const stored = localStorage.getItem(DB_KEY);
+      notes = stored ? JSON.parse(stored) : defaultNotes;
+      renderNotes();
+    }
+
+    function saveNotes() {
+      localStorage.setItem(DB_KEY, JSON.stringify(notes));
+    }
+
+    // --- Screen Navigation ---
+    function showScreen(screenId) {
+      document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+      document.getElementById(screenId).classList.add('active');
+    }
+
+    // --- Render Notes ---
+    function renderNotes() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const grid = document.getElementById('notes-grid');
+      grid.innerHTML = "";
+
+      const filtered = notes.filter(n => {
+        const matchesCategory = currentCategory === "All" || 
+          (currentCategory === "Shared" ? n.isShared : n.category === currentCategory);
+        const matchesQuery = n.title.toLowerCase().includes(query) || 
+                             n.content.toLowerCase().includes(query);
+        return matchesCategory && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        grid.innerHTML = `<div style="grid-column: span 2; text-align: center; color: var(--text-muted); padding: 40px;">No notes found</div>`;
+        return;
+      }
+
+      filtered.forEach(note => {
+        const card = document.createElement('div');
+        card.className = "note-card";
+        card.onclick = () => openNote(note.id);
+
+        const hasVideo = note.media && note.media.some(m => m.type === 'video');
+        const hasImage = note.media && note.media.some(m => m.type === 'image');
+
+        card.innerHTML = `
+          <div>
+            <div class="note-card-header">
+              <span class="note-tag-pill">${note.category}</span>
+              <span>${note.isPinned ? "📌" : ""} ${note.isShared ? "👥" : ""}</span>
+            </div>
+            <div class="note-card-title">${escapeHtml(note.title || "Untitled")}</div>
+            <div class="note-card-snippet">${escapeHtml(note.content)}</div>
+          </div>
+          <div class="note-card-footer">
+            <span>${new Date(note.updatedAt).toLocaleDateString()}</span>
+            <div class="media-icons">
+              ${hasVideo ? "<span>🎥</span>" : ""}
+              ${hasImage ? "<span>🖼️</span>" : ""}
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function setCategory(cat, element) {
+      currentCategory = cat;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      element.classList.add('active');
+      renderNotes();
+    }
+
+    function handleSearch() {
+      renderNotes();
+    }
+
+    // --- Editor Operations ---
+    function createNewNote() {
+      activeNote = {
+        id: Date.now(),
+        title: "",
+        content: "",
+        category: currentCategory !== "All" && currentCategory !== "Shared" ? currentCategory : "General",
+        isPinned: false,
+        isShared: false,
+        media: [],
+        tags: [],
+        updatedAt: Date.now()
+      };
+      notes.unshift(activeNote);
+      openNote(activeNote.id);
+    }
+
+    function openNote(id) {
+      activeNote = notes.find(n => n.id === id);
+      if (!activeNote) return;
+
+      document.getElementById('note-title').value = activeNote.title;
+      document.getElementById('note-content').value = activeNote.content;
+      currentUserRole = "OWNER";
+      updateRoleUI();
+      renderMediaItems();
+      showScreen('screen-detail');
+    }
+
+    function saveAndClose() {
+      if (!activeNote) return;
+      activeNote.title = document.getElementById('note-title').value;
+      activeNote.content = document.getElementById('note-content').value;
+      activeNote.updatedAt = Date.now();
+      saveNotes();
+      stopLiveSim();
+      showScreen('screen-list');
+      renderNotes();
+    }
+
+    function deleteCurrentNote() {
+      if (!confirm("Delete this note?")) return;
+      notes = notes.filter(n => n.id !== activeNote.id);
+      saveNotes();
+      stopLiveSim();
+      showScreen('screen-list');
+      renderNotes();
+    }
+
+    function togglePinCurrentNote() {
+      if (!activeNote) return;
+      activeNote.isPinned = !activeNote.isPinned;
+      saveNotes();
+      alert(activeNote.isPinned ? "Note pinned!" : "Note unpinned.");
+    }
+
+    // --- Rich Text Formatting ---
+    function insertFormat(prefix, suffix) {
+      if (currentUserRole === "VIEWER") return;
+      const textarea = document.getElementById('note-content');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selected = textarea.value.substring(start, end);
+      const replacement = prefix + selected + suffix;
+
+      textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
+    }
+
+    // --- Media Attachments ---
+    function renderMediaItems() {
+      const container = document.getElementById('media-items-container');
+      const countLabel = document.getElementById('media-count');
+      container.innerHTML = "";
+      countLabel.textContent = activeNote.media.length;
+
+      activeNote.media.forEach((item, index) => {
+        const div = document.createElement('div');
+        div.className = "media-item";
+        if (item.type === 'image') {
+          div.innerHTML = `
+            <img src="${item.url}" alt="${escapeHtml(item.caption || 'Image')}">
+            <div class="media-caption">
+              <span>🖼️ ${escapeHtml(item.caption || 'Photo Attachment')}</span>
+              ${currentUserRole !== "VIEWER" ? `<button class="btn-delete-media" onclick="removeMedia(${index})">Delete</button>` : ""}
+            </div>
+          `;
+        } else {
+          div.innerHTML = `
+            <video controls playsinline src="${item.url}"></video>
+            <div class="media-caption">
+              <span>🎥 ${escapeHtml(item.caption || 'Video Media')}</span>
+              ${currentUserRole !== "VIEWER" ? `<button class="btn-delete-media" onclick="removeMedia(${index})">Delete</button>` : ""}
+            </div>
+          `;
+        }
+        container.appendChild(div);
+      });
+    }
+
+    function handleLocalImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        activeNote.media.push({
+          id: Date.now(),
+          type: "image",
+          url: event.target.result,
+          caption: file.name
+        });
+        saveNotes();
+        renderMediaItems();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function handleLocalVideoUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const blobUrl = URL.createObjectURL(file);
+      activeNote.media.push({
+        id: Date.now(),
+        type: "video",
+        url: blobUrl,
+        caption: file.name
+      });
+      saveNotes();
+      renderMediaItems();
+    }
+
+    function removeMedia(index) {
+      activeNote.media.splice(index, 1);
+      saveNotes();
+      renderMediaItems();
+    }
+
+    function openWebVideoModal() {
+      document.getElementById('web-video-modal').classList.add('open');
+    }
+
+    function setSampleVideo() {
+      document.getElementById('web-video-url').value = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4";
+      document.getElementById('web-video-caption').value = "Big Buck Bunny HD Stream";
+    }
+
+    function confirmWebVideo() {
+      const url = document.getElementById('web-video-url').value.trim();
+      const caption = document.getElementById('web-video-caption').value.trim();
+      if (!url) return;
+
+      activeNote.media.push({
+        id: Date.now(),
+        type: "video",
+        url: url,
+        caption: caption || "Web Video Stream"
+      });
+      saveNotes();
+      renderMediaItems();
+      closeModal('web-video-modal');
+    }
+
+    // --- Real-Time Collaboration Simulation ---
+    function toggleLiveSim() {
+      const btn = document.getElementById('sim-btn');
+      const indicator = document.getElementById('typing-indicator');
+
+      if (isSimulating) {
+        stopLiveSim();
+      } else {
+        isSimulating = true;
+        btn.classList.add('active');
+        btn.textContent = "⚡ Sim Active";
+
+        const sampleEdits = [
+          "\n • Sophia: Checked video stream playback.",
+          "\n • Sophia: Added collaborative notes.",
+          "\n • Sophia: Formatted bullet points.",
+          "\n • Sophia: Verified permission levels."
+        ];
+        let i = 0;
+
+        simTimer = setInterval(() => {
+          indicator.textContent = "✍ Sophia Chen is typing...";
+          setTimeout(() => {
+            const textarea = document.getElementById('note-content');
+            textarea.value += sampleEdits[i % sampleEdits.length];
+            i++;
+            indicator.textContent = "";
+          }, 1200);
+        }, 3500);
+      }
+    }
+
+    function stopLiveSim() {
+      isSimulating = false;
+      clearInterval(simTimer);
+      const btn = document.getElementById('sim-btn');
+      if (btn) {
+        btn.classList.remove('active');
+        btn.textContent = "⚡ Simulate Live Edit";
+      }
+      const indicator = document.getElementById('typing-indicator');
+      if (indicator) indicator.textContent = "";
+    }
+
+    function cycleRole() {
+      const roles = ["OWNER", "EDITOR", "VIEWER"];
+      let nextIndex = (roles.indexOf(currentUserRole) + 1) % roles.length;
+      currentUserRole = roles[nextIndex];
+      updateRoleUI();
+    }
+
+    function updateRoleUI() {
+      document.getElementById('current-role-label').textContent = currentUserRole;
+      const isViewer = currentUserRole === "VIEWER";
+      document.getElementById('note-title').readOnly = isViewer;
+      document.getElementById('note-content').readOnly = isViewer;
+      document.getElementById('formatting-bar').style.display = isViewer ? "none" : "flex";
+      renderMediaItems();
+    }
+
+    function openShareModal() {
+      document.getElementById('share-modal').classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function inviteCollaborator() {
+      const email = document.getElementById('share-email').value.trim();
+      if (!email) return;
+      activeNote.isShared = true;
+      saveNotes();
+      alert(`Invitation sent to ${email}`);
+      document.getElementById('share-email').value = "";
+      closeModal('share-modal');
+    }
+
+    function copyShareLink() {
+      const input = document.getElementById('share-link-input');
+      input.select();
+      document.execCommand('copy');
+      alert("Link copied to clipboard!");
+    }
+
+    function escapeHtml(text) {
+      if (!text) return "";
+      return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    // Startup
+    window.onload = loadNotes;
+  </script>
+</body>
+</html>
